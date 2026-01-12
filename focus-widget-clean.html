@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Focus Flow Timer</title>
+    <style>
+     :root {
+  --accent: #c1593a;
+  --break: #7d9d84;
+  --longbreak: #d4aa7d;
+  --reset: #c58a78;
+  --font: "Segoe UI", sans-serif;
+}
+      
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font);
+    background: transparent;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+}
+
+.widget-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.container {
+    position: relative;
+    width: 200px;
+    max-width: 100%;
+}
+
+.timer-display {
+  position: relative;
+  width: 200px;
+  margin: 0 auto 15px;
+}
+
+#tomato {
+  width: 100%;
+  max-width: 200px;
+}
+
+#timer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #2d3748;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.glow {
+  color: #e53e3e !important;
+  text-shadow: 0 0 10px rgba(229, 62, 62, 0.7);
+  animation: shake 0.6s infinite alternate;
+}
+
+@keyframes shake {
+  0% { transform: translate(-50%, -50%) rotate(-1deg); }
+  100% { transform: translate(-50%, -50%) rotate(1deg); }
+}
+
+.buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 15px;
+    width: 280px;
+    max-width: 100%;
+}
+
+.buttons button {
+    border: none;
+    padding: 8px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.focus { background-color: var(--accent); }
+.short { background-color: var(--break); }
+.long { background-color: var(--longbreak); }
+
+.reset {
+    background-color: var(--reset);
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: 60%;
+    max-width: 100%;
+}
+
+.controls {
+  margin-top: 15px;
+  font-size: 0.85rem;
+  color: #4a4a4a;
+}
+
+.controls input[type="checkbox"] {
+  margin-left: 5px;
+  transform: scale(1.1);
+  cursor: pointer;
+}
+
+#notification {
+  margin-top: 12px;
+  display: none;
+  padding: 8px;
+  background-color: #e6fffa;
+  border: 1px solid #b2f5ea;
+  border-radius: 8px;
+  color: #22543d;
+  font-size: 0.9rem;
+  font-weight: bold;
+  animation: fadeIn 0.6s ease-in-out;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 320px) {
+    .container {
+        width: 160px;
+    }
+    
+    #timer {
+        font-size: 2.2rem;
+    }
+    
+    .buttons {
+        width: 260px;
+        gap: 6px;
+    }
+    
+    .buttons button {
+        padding: 6px;
+        font-size: 0.8rem;
+    }
+}
+    </style>
+  </head>
+  <body>
+    <div class="widget-wrapper">
+        <div class="container">
+            <img src="Tomato.png" id="tomato" alt="Tomato Clock" />
+            <div id="timer">25:00</div>
+        </div>
+        <div class="buttons">
+            <button class="focus" onclick="setTimer(25, 'focus')">Focus 🍅</button>
+            <button class="short" onclick="setTimer(5, 'break')">5-Min Break 🌿</button>
+            <button class="long" onclick="setTimer(15, 'break')">15-Min Break 🫖</button>
+            <button class="focus" onclick="toggleTimer()" id="startPauseBtn">Start</button>
+            <button class="reset" onclick="resetTimer()">Reset</button>
+        </div>
+        <div class="controls">
+            <label>🔔 Sound On
+                <input type="checkbox" id="soundToggle" checked onchange="handleSoundToggle()"/>
+            </label>
+        </div>
+        <div id="notification">🌟 Time is up! Take a break.</div>
+        
+        <audio id="chime" preload="auto">
+            <source src="mixkit-alarm-clock-beep-988.wav" type="audio/mpeg" />
+        </audio>
+        <audio id="tick" preload="auto" loop>
+            <source src="tick_loop_seamless.mp3" type="audio/mpeg" />
+        </audio>
+    </div>
+
+    <script>
+        // ===== TIMER FUNCTIONALITY =====
+        let time = 25 * 60;
+        let timer;
+        let isRunning = false;
+        let mode = "focus";
+        const chime = document.getElementById("chime");
+        const tick = document.getElementById("tick");
+        const soundToggle = document.getElementById("soundToggle");
+        const notification = document.getElementById("notification");
+        const timerDisplay = document.getElementById("timer");
+        let tickingStarted = false;
+
+        function handleSoundToggle() {
+            if (!soundToggle.checked) {
+                tick.pause();
+                chime.pause();
+                tick.currentTime = 0;
+                chime.currentTime = 0;
+                tickingStarted = false;
+            }
+        }
+
+        function updateDisplay() {
+            const minutes = Math.floor(time / 60);
+            const seconds = time % 60;
+            timerDisplay.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+            
+            // Start ticking at 30 seconds remaining
+            if (time <= 30 && time > 0 && isRunning && soundToggle.checked) {
+                timerDisplay.classList.add("glow");
+                if (!tickingStarted) {
+                    tick.play();
+                    tickingStarted = true;
+                }
+            } else {
+                timerDisplay.classList.remove("glow");
+                tick.pause();
+                tick.currentTime = 0;
+                tickingStarted = false;
+            }
+        }
+
+        function setTimer(mins, selectedMode = "focus") {
+            clearInterval(timer);
+            isRunning = false;
+            time = mins * 60;
+            mode = selectedMode;
+            notification.style.display = "none";
+            timerDisplay.classList.remove("glow");
+            tick.pause();
+            tick.currentTime = 0;
+            tickingStarted = false;
+            
+            // Stop chime when new timer is set
+            chime.pause();
+            chime.currentTime = 0;
+            
+            updateDisplay();
+        }
+
+        function toggleTimer() {
+            const startPauseBtn = document.getElementById("startPauseBtn");
+            
+            if (isRunning) {
+                clearInterval(timer);
+                isRunning = false;
+                tick.pause();
+                tick.currentTime = 0;
+                tickingStarted = false;
+                startPauseBtn.textContent = "Start";
+            } else {
+                timer = setInterval(() => {
+                    if (time > 0) {
+                        time--;
+                        updateDisplay();
+                    } else {
+                        clearInterval(timer);
+                        isRunning = false;
+                        startPauseBtn.textContent = "Start";
+                        
+                        // Play chime with auto-stop after 3 seconds
+                        if (soundToggle.checked) {
+                            chime.play();
+                            setTimeout(() => {
+                                chime.pause();
+                                chime.currentTime = 0;
+                            }, 3000);
+                        }
+                        
+                        tick.pause();
+                        tick.currentTime = 0;
+                        tickingStarted = false;
+                        notification.style.display = mode === "focus" ? "block" : "none";
+                        timerDisplay.classList.remove("glow");
+                    }
+                }, 1000);
+                isRunning = true;
+                startPauseBtn.textContent = "Pause";
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            time = 25 * 60;
+            isRunning = false;
+            notification.style.display = "none";
+            timerDisplay.classList.remove("glow");
+            tick.pause();
+            tick.currentTime = 0;
+            tickingStarted = false;
+            
+            // Stop chime when reset is clicked
+            chime.pause();
+            chime.currentTime = 0;
+            
+            // Reset button text
+            const startPauseBtn = document.getElementById("startPauseBtn");
+            startPauseBtn.textContent = "Start";
+            
+            updateDisplay();
+        }
+
+        // Initialize
+        updateDisplay();
+    </script>
+  </body>
+</html>
