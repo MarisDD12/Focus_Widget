@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Focus Flow Timer</title>
+    <style>
+     :root {
+  --accent: #c1593a;
+  --break: #7d9d84;
+  --longbreak: #d4aa7d;
+  --reset: #c58a78;
+  --font: "Segoe UI", sans-serif;
+}
+      
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font);
+    background: transparent;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+}
+
+.widget-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.container {
+    position: relative;
+    width: 200px;
+    max-width: 100%;
+}
+
+.timer-display {
+  position: relative;
+  width: 200px;
+  margin: 0 auto 15px;
+}
+
+#tomato {
+  width: 100%;
+  max-width: 200px;
+}
+
+#timer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #2d3748;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.glow {
+  color: #e53e3e !important;
+  text-shadow: 0 0 10px rgba(229, 62, 62, 0.7);
+  animation: shake 0.6s infinite alternate;
+}
+
+@keyframes shake {
+  0% { transform: translate(-50%, -50%) rotate(-1deg); }
+  100% { transform: translate(-50%, -50%) rotate(1deg); }
+}
+
+.buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 15px;
+    width: 280px;
+    max-width: 100%;
+}
+
+.buttons button {
+    border: none;
+    padding: 8px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.focus { background-color: var(--accent); }
+.short { background-color: var(--break); }
+.long { background-color: var(--longbreak); }
+
+.reset {
+    background-color: var(--reset);
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: 60%;
+    max-width: 100%;
+}
+
+.controls {
+  margin-top: 15px;
+  font-size: 0.85rem;
+  color: #4a4a4a;
+}
+
+.controls input[type="checkbox"] {
+  margin-left: 5px;
+  transform: scale(1.1);
+  cursor: pointer;
+}
+
+#notification {
+  margin-top: 12px;
+  display: none;
+  padding: 8px;
+  background-color: #e6fffa;
+  border: 1px solid #b2f5ea;
+  border-radius: 8px;
+  color: #22543d;
+  font-size: 0.9rem;
+  font-weight: bold;
+  animation: fadeIn 0.6s ease-in-out;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 320px) {
+    .container {
+        width: 160px;
+    }
+    
+    #timer {
+        font-size: 2.2rem;
+    }
+    
+    .buttons {
+        width: 260px;
+        gap: 6px;
+    }
+    
+    .buttons button {
+        padding: 6px;
+        font-size: 0.8rem;
+    }
+}
+    </style>
+  </head>
+  <body>
+    <div class="widget-wrapper">
+        <div class="container">
+            <img src="Tomato.png" id="tomato" alt="Tomato Clock" />
+            <div id="timer">25:00</div>
+        </div>
+        <div class="buttons">
+            <button class="focus" onclick="setTimer(25, 'focus')">Focus 🍅</button>
+            <button class="short" onclick="setTimer(5, 'break')">5-Min Break 🌿</button>
+            <button class="long" onclick="setTimer(15, 'break')">15-Min Break 🫖</button>
+            <button class="focus" onclick="toggleTimer()" id="startPauseBtn">Start</button>
+            <button class="reset" onclick="resetTimer()">Reset</button>
+        </div>
+        <div class="controls">
+            <label>🔔 Sound On
+                <input type="checkbox" id="soundToggle" checked onchange="handleSoundToggle()"/>
+            </label>
+        </div>
+        <div id="notification">🌟 Time is up! Take a break.</div>
+        
+        <!-- NEW: WordPress Branding -->
+        <div id="branding-footer" style="
+            font-size: 11px; 
+            text-align: center; 
+            margin-top: 15px; 
+            padding: 8px;
+            border-top: 1px solid #eee;
+            color: #666;
+            max-width: 100%;
+        ">
+            <a href="https://templates.marisdigitaldesk.com/" 
+               target="_blank" 
+               style="color: #c1593a; text-decoration: none; font-weight: 500;">
+                📚 Get Pro Tips & Templates
+            </a>
+            <span style="margin: 0 8px; color: #ddd;">|</span>
+            <a href="https://templates.marisdigitaldesk.com/" 
+               target="_blank" 
+               style="color: #666; text-decoration: none;">
+                Mari's Digital Desk
+            </a>
+        </div>
+
+        <!-- NEW: Pro Version Teaser -->
+        <div id="pro-teaser" style="
+            font-size: 10px; 
+            text-align: center; 
+            margin-top: 8px;
+            color: #999;
+            max-width: 100%;
+        ">
+            🔥 <a href="https://focus.marisdigitaldesk.com/pro-preview.html" 
+                  target="_blank" 
+                  style="color: #c1593a; text-decoration: none;">
+                Pro version with analytics & team features coming soon
+            </a>
+        </div>
+        
+        <audio id="chime" preload="auto">
+            <source src="mixkit-alarm-clock-beep-988.wav" type="audio/mpeg" />
+        </audio>
+        <audio id="tick" preload="auto" loop>
+            <source src="tick_loop_seamless.mp3" type="audio/mpeg" />
+        </audio>
+    </div>
+
+    <script>
+        // Analytics setup
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+
+        // ===== COMMENTED OUT: LICENSE PROTECTION SYSTEM =====
+        /*
+        (function() {
+            const pathSegments = window.location.pathname.split('/').filter(segment => segment);
+            const customerKey = pathSegments[0];
+            
+            const validKeys = [
+    'ff-mbocezjk-vd1s',
+    'ff-mbocezjk-mr8v',
+    'ff-mbocezjk-fevd',
+    'ff-mbocezjk-i1bm',
+    'ff-mbocezjk-qz4a',
+    'ff-mbocezjk-41tk',
+    'ff-mbocezjk-s66e',
+    'ff-mbocezjk-sqkh',
+    'ff-mbocezjk-tju8',
+    'ff-mbocezjk-33l2',
+    'ff-mbocezjk-ejbo',
+    'ff-mbocezjk-ilp2',
+    'ff-mbocezjk-lcil',
+    'ff-mbocezjk-ecu0',
+    'ff-mbocezjk-iuuq',
+    'ff-mbocezjk-s0mp',
+    'ff-mbocezjk-mdep',
+    'ff-mbocezjk-a5sj',
+    'ff-mbocezjk-kncy',
+    'ff-mbocezjk-5ydr',
+    'ff-mbocezjk-3vtk',
+    'ff-mbocezjk-rvdf',
+    'ff-mbocezjk-xavk',
+    'ff-mbocezjk-j3nv',
+    'ff-mbocezjk-bwfa',
+    'ff-mbocezjk-yxem',
+    'ff-mbocezjk-5zy9',
+    'ff-mbocezjk-9dnm',
+    'ff-mbocezjk-6elp',
+    'ff-mbocezjk-90gi',
+    'ff-mbocezjk-1s9e',
+    'ff-mbocezjk-8zbf',
+    'ff-mbocezjk-5ogz',
+    'ff-mbocezjk-sln0',
+    'ff-mbocezjk-yh8w',
+    'ff-mbocezjk-nczt',
+    'ff-mbocezjk-ogh8',
+    'ff-mbocezjk-f07t',
+    'ff-mbocezjk-ukwq',
+    'ff-mbocezjk-gd6a',
+    'ff-mbocezjk-2x8o',
+    'ff-mbocezjk-smxd',
+    'ff-mbocezjk-mz5v',
+    'ff-mbocezjk-deaz',
+    'ff-mbocezjk-wnfb',
+    'ff-mbocezjk-xsre',
+    'ff-mbocezjk-fpk9',
+    'ff-mbocezjk-2qvq',
+    'ff-mbocezjk-u61m',
+    'ff-mbocezjk-27ie',
+    'ff-mbrezw08-mby4',         
+];
+            
+            function isNotionMobileApp() {
+                const userAgent = navigator.userAgent.toLowerCase();
+                const isEmbedded = window.parent !== window;
+                
+                const hasNoReferrer = !document.referrer || document.referrer === '';
+                const isMobile = /mobile|android|iphone|ipad/i.test(userAgent);
+                
+                return isEmbedded && hasNoReferrer && isMobile;
+            }
+            
+            function checkDomain() {
+                const allowedDomains = ['notion.so', 'localhost', 'focus-flow-widget.vercel.app'];
+                const currentDomain = window.location.hostname;
+                const isEmbedded = window.parent !== window;
+                
+                if (allowedDomains.some(domain => currentDomain.includes(domain))) {
+                    return true;
+                }
+                
+                if (isNotionMobileApp()) {
+                    console.log('Notion mobile app detected - allowing access');
+                    return true;
+                }
+                
+                if (isEmbedded) {
+                    try {
+                        const parentDomain = new URL(document.referrer).hostname;
+                        return allowedDomains.some(domain => parentDomain.includes(domain));
+                    } catch(e) {
+                        console.log('Referrer access blocked - assuming mobile app');
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            
+            function showUnauthorizedMessage(reason) {
+                document.body.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; font-family: 'Segoe UI', sans-serif; color: #666; min-height: 300px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">🔒</div>
+                        <h3 style="color: #c1593a; margin-bottom: 15px;">License Required</h3>
+                        <p style="margin-bottom: 10px; max-width: 300px;">This Focus Flow Timer requires a valid license key.</p>
+                        <a href="https://focus-flow-widget.vercel.app" style="background: #c1593a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Get Official Template</a>
+                    </div>
+                `;
+                
+                // Track unauthorized attempts
+                if (typeof window.va !== 'undefined') {
+                    window.va('track', 'unauthorized_access', { key: customerKey || 'none' });
+                }
+                return;
+            }
+            
+            // Validate license key first
+            if (!customerKey || !validKeys.includes(customerKey)) {
+                showUnauthorizedMessage('invalid-key');
+                return;
+            }
+            
+            // Then check domain (with mobile allowances)
+            if (!checkDomain()) {
+                showUnauthorizedMessage('domain-blocked');
+                return;
+            }
+            
+            // Success! Track successful license validation
+            console.log('Licensed widget authorized for:', customerKey);
+            if (typeof window.va !== 'undefined') {
+                window.va('track', 'widget_loaded', { customerKey: customerKey });
+            }
+            
+        })();
+        */
+        // ===== END COMMENTED LICENSE PROTECTION =====
+
+        // ===== TIMER FUNCTIONALITY =====
+        let time = 25 * 60;
+        let timer;
+        let isRunning = false;
+        let mode = "focus";
+        const chime = document.getElementById("chime");
+        const tick = document.getElementById("tick");
+        const soundToggle = document.getElementById("soundToggle");
+        const notification = document.getElementById("notification");
+        const timerDisplay = document.getElementById("timer");
+        let tickingStarted = false;
+
+        function handleSoundToggle() {
+            if (!soundToggle.checked) {
+                tick.pause();
+                chime.pause();
+                tick.currentTime = 0;
+                chime.currentTime = 0;
+                tickingStarted = false;
+            }
+            
+            // Track sound preference
+            if (typeof window.va !== 'undefined') {
+                window.va('track', 'sound_toggled', { 
+                    enabled: soundToggle.checked,
+                    source: 'free_widget'
+                });
+            }
+        }
+
+        function updateDisplay() {
+            const minutes = Math.floor(time / 60);
+            const seconds = time % 60;
+            timerDisplay.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+            
+            // Start ticking at 30 seconds remaining instead of 5 minutes
+            if (time <= 30 && time > 0 && isRunning && soundToggle.checked) {
+                timerDisplay.classList.add("glow");
+                if (!tickingStarted) {
+                    tick.play();
+                    tickingStarted = true;
+                }
+            } else {
+                timerDisplay.classList.remove("glow");
+                tick.pause();
+                tick.currentTime = 0;
+                tickingStarted = false;
+            }
+        }
+
+        function setTimer(mins, selectedMode = "focus") {
+            clearInterval(timer);
+            isRunning = false;
+            time = mins * 60;
+            mode = selectedMode;
+            notification.style.display = "none";
+            timerDisplay.classList.remove("glow");
+            tick.pause();
+            tick.currentTime = 0;
+            tickingStarted = false;
+            
+            // Stop chime when new timer is set
+            chime.pause();
+            chime.currentTime = 0;
+            
+            updateDisplay();
+            
+            // Track timer mode selection
+            if (typeof window.va !== 'undefined') {
+                window.va('track', 'timer_mode_selected', { 
+                    mode: selectedMode,
+                    duration: mins,
+                    source: 'free_widget'
+                });
+            }
+        }
+
+        function toggleTimer() {
+            const startPauseBtn = document.getElementById("startPauseBtn");
+            
+            if (isRunning) {
+                clearInterval(timer);
+                isRunning = false;
+                tick.pause();
+                tick.currentTime = 0;
+                tickingStarted = false;
+                startPauseBtn.textContent = "Start";
+                
+                // Track timer pause
+                if (typeof window.va !== 'undefined') {
+                    window.va('track', 'timer_paused', { 
+                        timeRemaining: time,
+                        mode: mode,
+                        source: 'free_widget'
+                    });
+                }
+            } else {
+                timer = setInterval(() => {
+                    if (time > 0) {
+                        time--;
+                        updateDisplay();
+                    } else {
+                        clearInterval(timer);
+                        isRunning = false;
+                        startPauseBtn.textContent = "Start";
+                        
+                        // Play chime with auto-stop after 3 seconds
+                        if (soundToggle.checked) {
+                            chime.play();
+                            setTimeout(() => {
+                                chime.pause();
+                                chime.currentTime = 0;
+                            }, 3000);
+                        }
+                        
+                        tick.pause();
+                        tick.currentTime = 0;
+                        tickingStarted = false;
+                        notification.style.display = mode === "focus" ? "block" : "none";
+                        timerDisplay.classList.remove("glow");
+                        
+                        // Track completed session
+                        if (typeof window.va !== 'undefined') {
+                            window.va('track', 'session_completed', { 
+                                mode: mode,
+                                source: 'free_widget'
+                            });
+                        }
+                    }
+                }, 1000);
+                isRunning = true;
+                startPauseBtn.textContent = "Pause";
+                
+                // Track timer start
+                if (typeof window.va !== 'undefined') {
+                    window.va('track', 'timer_started', { 
+                        duration: time,
+                        mode: mode,
+                        source: 'free_widget'
+                    });
+                }
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            time = 25 * 60;
+            isRunning = false;
+            notification.style.display = "none";
+            timerDisplay.classList.remove("glow");
+            tick.pause();
+            tick.currentTime = 0;
+            tickingStarted = false;
+            
+            // Stop chime when reset is clicked
+            chime.pause();
+            chime.currentTime = 0;
+            
+            // Reset button text
+            const startPauseBtn = document.getElementById("startPauseBtn");
+            startPauseBtn.textContent = "Start";
+            
+            updateDisplay();
+        }
+
+        // Initialize
+        updateDisplay();
+    </script>
+
+    <!-- Vercel Analytics -->
+    <script defer src="/_vercel/insights/script.js"></script>
+  </body>
+</html>
